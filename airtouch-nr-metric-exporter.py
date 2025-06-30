@@ -30,14 +30,14 @@ from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
 # --- Configuration ---
 load_dotenv()
-NEW_RELIC_KEY = os.getenv("NEW_RELIC_INSERT_KEY")
+NEW_RELIC_KEY = os.getenv("SECRET_NEW_RELIC_LICENSE_KEY")
 # --- End Configuration ---
 
 
 def setup_opentelemetry() -> metrics.Meter:
     """Configures and starts the OpenTelemetry SDK to send metrics to New Relic."""
     if not NEW_RELIC_KEY:
-        raise ValueError("NEW_RELIC_INSERT_KEY not found in environment variables.")
+        raise ValueError("SECRET_NEW_RELIC_LICENSE_KEY not found in environment variables.")
 
     # The OTLP endpoint for New Relic's US data center.
     # For EU, use: https://otlp.api.eu.newrelic.com:4317/v1/metrics
@@ -136,9 +136,9 @@ async def _monitor_airtouch(airtouch: pyairtouch.AirTouch, meter: metrics.Meter)
                 attributes["airtouch.zone.openPercentage"] = zone.current_damper_percentage
 
             # Add all Air Conditioner data points as additional attributes.
-            attributes["airtouch.aircon.powerState"] = aircon.power_state.name
-            attributes["airtouch.aircon.activeMode"] = aircon.active_mode.name
-            attributes["airtouch.aircon.activeFanSpeed"] = aircon.active_fan_speed.name
+            attributes["airtouch.aircon.powerState"] = aircon.power_state.name if aircon.power_state else "UNKNOWN"
+            attributes["airtouch.aircon.activeMode"] = aircon.active_mode.name if aircon.active_mode else "UNKNOWN"
+            attributes["airtouch.aircon.activeFanSpeed"] = aircon.active_fan_speed.name if aircon.active_fan_speed else "UNKNOWN"
             if aircon.current_temperature is not None:
                 attributes["airtouch.aircon.currentTemperature"] = aircon.current_temperature
             if aircon.target_temperature is not None:

@@ -1,0 +1,99 @@
+name: Deploy Project to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Private Repository
+        uses: actions/checkout@v4
+
+      - name: Remove .git directory before copying
+        run: rm -rf .git
+
+      - name: Copy Files to Server via SCP
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ vars.SSH_HOST }}
+          username: ${{ vars.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ vars.SSH_PORT }}
+          source: "./"
+          # The target directory now uses the repository name dynamically
+          target: "/home/${{ vars.SSH_USER }}/${{ github.event.repository.name }}"
+          overwrite: true
+
+      - name: Run Deployment Script on Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.SSH_HOST }}
+          username: ${{ vars.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ vars.SSH_PORT }}
+          command_timeout: 45m
+          script: |
+            # Exit immediately if a command exits with a non-zero status.
+            set -e
+
+            # --- Environment and Path Configuration ---
+            # Paths are now defined dynamically using the GitHub repository name
+            PROJECT_DIR="/home/${{ vars.SSH_USER }}/${{ github.event.repository.name }}"
+            PM2_CONF_PATH="/home/${{ vars.SSH_USER }}/.pm2-configs/${{ github.event.repository.name }}"
+
+            # Ensure directories exist
+            mkdir -p $PROJECT_DIR
+            mkdir -p $PM2_CONF_PATH
+
+            # --- System & Python Dependencies ---
+            echo "Ensuring system dependencies are installed..."
+            export PYENV_ROOT="$HOME/.pyenv"
+            export PATH="$PYENV_ROOT/bin:$PATH"
+            eval "$(pyenv init --path)"
+            pyenv global 3.11.9
+
+            # --- Configure Application ---
+            cd $PROJECT_DIR
+
+            echo "Creating application config files..."
+            cat << EOF > ecosystem.config.js
+            module.exports = {
+              apps: [{
+                // The PM2 app name is now the repository name
+                name: '${{ github.event.repository.name }}',
+                script: 'start.sh',
+                watch: false
+              }]
+            };
+            EOF
+            # Create other necessary files like .env, start.sh, etc.
+            touch start.sh && chmod +x start.sh
+
+            # --- Set up Python Environment ---
+            echo "Setting up Python virtual environment..."
+            if [ -d ".venv" ]; then
+              rm -rf .venv
+            fi
+            python -m venv .venv
+            source .venv/bin/activate
+            # Example: pip install -r requirements.txt
+
+            # --- MANAGE THE ISOLATED PM2 INSTANCE ---
+            echo "Starting or reloading application with isolated PM2 instance..."
+            export PM2_HOME=$PM2_CONF_PATH
+
+            # Stop the app using its dynamic name
+            pm2 delete ${{ github.event.repository.name }} || true
+            pm2 start ecosystem.config.js
+            pm2 save
+
+            # --- CONFIGURE PERSISTENCE VIA CRON ---
+            echo "Configuring persistence for this instance via cron..."
+            CRON_JOB="@reboot export PM2_HOME=${PM2_CONF_PATH} && /home/${{ vars.SSH_USER }}/.pyenv/shims/pyenv exec pm2 resurrect"
+            (crontab -l 2>/dev/null | grep -v -F "PM2_HOME=${PM2_CONF_PATH}" ; echo "${CRON_JOB}") | crontab -
+
+            echo "Deployment for ${{ github.event.repository.name }} complete. Instance is isolated in ${PM2_CONF_PATH}"
