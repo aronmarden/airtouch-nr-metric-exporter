@@ -1,2 +1,4 @@
 **/node_modules/
 *.ignore
+Archive/
+__pycache__/

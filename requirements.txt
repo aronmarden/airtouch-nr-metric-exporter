@@ -1,0 +1,15 @@
+# For AirTouch communication
+pyairtouch
+
+# For loading credentials from a .env file
+python-dotenv
+
+# --- The modern New Relic monitoring stack ---
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp
+
+
+
+fastapi
+uvicorn[standard]
