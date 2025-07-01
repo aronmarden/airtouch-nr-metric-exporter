@@ -60,6 +60,9 @@ jobs:
             cd $PROJECT_DIR
 
             echo "Creating application config files..."
+            cat << EOF > .env
+            NEW_RELIC_LICENSE_KEY=${{ secrets.NEW_RELIC_LICENSE_KEY }}
+            EOF
             cat << EOF > ecosystem.config.js
             module.exports = {
               apps: [{

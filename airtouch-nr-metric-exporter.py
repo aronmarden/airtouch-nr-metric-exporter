@@ -30,14 +30,14 @@ from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
 # --- Configuration ---
 load_dotenv()
-NEW_RELIC_KEY = os.getenv("SECRET_NEW_RELIC_LICENSE_KEY")
+NEW_RELIC_KEY = os.getenv("NEW_RELIC_LICENSE_KEY")
 # --- End Configuration ---
 
 
 def setup_opentelemetry() -> metrics.Meter:
     """Configures and starts the OpenTelemetry SDK to send metrics to New Relic."""
     if not NEW_RELIC_KEY:
-        raise ValueError("SECRET_NEW_RELIC_LICENSE_KEY not found in environment variables.")
+        raise ValueError("NEW_RELIC_LICENSE_KEY not found in environment variables.")
 
     # The OTLP endpoint for New Relic's US data center.
     # For EU, use: https://otlp.api.eu.newrelic.com:4317/v1/metrics
