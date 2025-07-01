@@ -88,7 +88,7 @@ jobs:
             export NEW_RELIC_CONFIG_FILE="\$SCRIPT_DIR/newrelic.ini"
 
             # Launch the application
-            NEW_RELIC_CONFIG_FILE=newrelic.ini newrelic-admin run-program uvicorn airtouch-rest-api:app --host 0.0.0.0 --port 8000
+            python ${{ github.event.repository.name }}.py
             EOF
 
             # Make the wrapper script executable
