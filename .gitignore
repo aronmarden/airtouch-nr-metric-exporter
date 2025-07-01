@@ -3,6 +3,5 @@
 Archive/
 __pycache__/
 .keys/
-sync-github-secrets.sh
 .env
 
