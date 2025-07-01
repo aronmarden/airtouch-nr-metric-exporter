@@ -60,16 +60,18 @@ jobs:
             cd $PROJECT_DIR
 
             echo "Creating application config files..."
-            cat << EOF > .env
-            NEW_RELIC_LICENSE_KEY=${{ secrets.NEW_RELIC_LICENSE_KEY }}
-            EOF
+            # REMOVED the block that creates the .env file
+            
             cat << EOF > ecosystem.config.js
             module.exports = {
               apps: [{
                 // The PM2 app name is now the repository name
                 name: '${{ github.event.repository.name }}',
                 script: 'start.sh',
-                watch: false
+                watch: false,
+                env: {
+                  "NEW_RELIC_LICENSE_KEY": "${{ secrets.NEW_RELIC_LICENSE_KEY }}"
+                }
               }]
             };
             EOF
