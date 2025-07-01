@@ -1,21 +1,11 @@
-#!/bin/bash
-# This script reads a .env file and syncs the values to GitHub
-# as repository secrets and variables.
-
-# Check if GitHub CLI is installed
-if ! command -v gh &> /dev/null; then
-    echo "GitHub CLI (gh) could not be found. Please install it."
-    exit 1
-fi
-
-echo "Syncing secrets and variables to the GitHub repository..."
-
-# Loop through the .env file to process secrets and variables line by line
 while IFS= read -r line || [[ -n "$line" ]]; do
   # Skip empty lines and comments
   if [[ -z "$line" ]] || [[ "$line" == \#* ]]; then
     continue
   fi
+
+  # This removes invisible carriage return characters (\r) that can cause issues
+  line=${line%$'\r'}
 
   KEY=$(echo "$line" | cut -d '=' -f 1)
   VALUE=$(echo "$line" | cut -d '=' -f 2-)
@@ -31,7 +21,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     echo "Setting secret: '$SECRET_NAME' from file: $FILE_PATH"
     gh secret set "$SECRET_NAME" < "$FILE_PATH"
 
-  elif [[ $KEY == SECRET_* ]]; then
+  # This condition is now explicit and safer
+  elif [[ $KEY == SECRET_* ]] && [[ $KEY != *_FILEPATH ]]; then
     SECRET_NAME="${KEY#SECRET_}"
     echo "Setting secret: $SECRET_NAME"
     echo "$VALUE" | gh secret set "$SECRET_NAME" --body -
@@ -42,5 +33,3 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     gh variable set "$VAR_NAME" --body "$VALUE"
   fi
 done < .env
-
-echo "Sync complete."
