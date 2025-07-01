@@ -136,9 +136,9 @@ async def _monitor_airtouch(airtouch: pyairtouch.AirTouch, meter: metrics.Meter)
                 attributes["airtouch.zone.openPercentage"] = zone.current_damper_percentage
 
             # Add all Air Conditioner data points as additional attributes.
-            attributes["airtouch.aircon.powerState"] = aircon.power_state.name
-            attributes["airtouch.aircon.activeMode"] = aircon.active_mode.name
-            attributes["airtouch.aircon.activeFanSpeed"] = aircon.active_fan_speed.name
+            attributes["airtouch.aircon.powerState"] = aircon.power_state.name if aircon.power_state else "UNKNOWN"
+            attributes["airtouch.aircon.activeMode"] = aircon.active_mode.name if aircon.active_mode else "UNKNOWN"
+            attributes["airtouch.aircon.activeFanSpeed"] = aircon.active_fan_speed.name if aircon.active_fan_speed else "UNKNOWN"
             if aircon.current_temperature is not None:
                 attributes["airtouch.aircon.currentTemperature"] = aircon.current_temperature
             if aircon.target_temperature is not None:
