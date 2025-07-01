@@ -70,8 +70,29 @@ jobs:
               }]
             };
             EOF
-            # Create other necessary files like .env, start.sh, etc.
-            touch start.sh && chmod +x start.sh
+            
+            # --- Create the ROBUST start.sh wrapper script ---
+            cat << EOF > start.sh
+            #!/bin/bash
+            # This script sets up the environment and runs the application.
+
+            # Determine the script's own directory to find the project root,
+            # ensuring all relative paths work correctly.
+            SCRIPT_DIR=\$(cd -- "\$(dirname -- "\${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+            cd "\$SCRIPT_DIR" || exit
+
+            # Activate the Python virtual environment
+            source .venv/bin/activate
+
+            # Set the New Relic config file path for the agent
+            export NEW_RELIC_CONFIG_FILE="\$SCRIPT_DIR/newrelic.ini"
+
+            # Launch the application
+            NEW_RELIC_CONFIG_FILE=newrelic.ini newrelic-admin run-program uvicorn airtouch-rest-api:app --host 0.0.0.0 --port 8000
+            EOF
+
+            # Make the wrapper script executable
+            chmod +x start.sh
 
             # --- Set up Python Environment ---
             echo "Setting up Python virtual environment..."
@@ -80,7 +101,7 @@ jobs:
             fi
             python -m venv .venv
             source .venv/bin/activate
-            # Example: pip install -r requirements.txt
+            pip install -r requirements.txt
 
             # --- MANAGE THE ISOLATED PM2 INSTANCE ---
             echo "Starting or reloading application with isolated PM2 instance..."
